@@ -3,6 +3,8 @@
   "version": "0.0.2",
   "description": "Check the availability of a username across multiple websites",
   "keywords": [
+    "username",
+    "checker",
     "username checker",
     "username availability",
     "username availability checker",
@@ -10,9 +12,7 @@
     "social media username availability",
     "social media username availability checker",
     "social media username availability validator",
-    "username validator",
-    "online username availability checker",
-    "online username validator"
+    "username validator"
   ],
   "repository": {
     "type": "git",
