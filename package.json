@@ -1,0 +1,68 @@
+{
+  "name": "username-checker",
+  "version": "0.0.0",
+  "description": "Check the availability of a username across multiple websites",
+  "keywords": [
+    "username checker",
+    "username availability",
+    "username availability checker",
+    "social media username checker",
+    "social media username availability",
+    "social media username availability checker",
+    "social media username availability validator",
+    "username validator",
+    "online username availability checker",
+    "online username validator"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mastermunj/username-checker.git"
+  },
+  "license": "MIT",
+  "author": "Munjal Dhamecha",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npm run clean && tsc --noEmitOnError",
+    "build:watch": "npm run build -- --watch",
+    "clean": "rimraf dist coverage",
+    "commit": "git-cz",
+    "lint": "eslint --ext .ts .",
+    "lint:fix": "npm run lint -- --fix",
+    "prepare": "husky install",
+    "release": "standard-version",
+    "release:mock": "npm run release -- --dry-run",
+    "test": "jest --detectOpenHandles --coverage",
+    "test:watch": "npm run test -- --watch"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "dependencies": {
+    "axios": "^1.3.4"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.5.0",
+    "@commitlint/config-conventional": "^17.4.4",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^18.15.10",
+    "@typescript-eslint/eslint-plugin": "^5.56.0",
+    "@typescript-eslint/parser": "^5.56.0",
+    "axios-mock-adapter": "^1.21.3",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-jest": "^27.2.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^8.0.3",
+    "jest": "^29.5.0",
+    "lint-staged": "^13.2.0",
+    "prettier": "^2.8.7",
+    "rimraf": "^4.4.1",
+    "sort-package-json": "^1.57.0",
+    "standard-version": "^9.5.0",
+    "ts-jest": "^29.0.5",
+    "typescript": "^5.0.2"
+  }
+}
