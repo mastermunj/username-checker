@@ -10,16 +10,22 @@ npm install username-checker --save
 
 ## Usage
 
-To use the Username Checker, you first need to import the package and create an instance of the `UsernameChecker` class:
+To use the Username Checker, you first need to import the package.
+
 
 ```js
-import UsernameChecker from 'username-checker';
-const usernameChecker = new UsernameChecker();
+import { UsernameChecker } from 'username-checker';
+```
+OR
+```js
+const { UsernameChecker } = require('username-checker');
 ```
 
-You can then use the `isAvailable` method to check the availability of a username on a specific website:
+
+Create an instance of the `UsernameChecker` class and then use the `isAvailable` method to check the availability of a username on a specific website:
 
 ```js
+const usernameChecker = new UsernameChecker();
 const result = usernameChecker.isAvailable('twitter', 'my-desired-username');
 console.log(result); // { service: 'twitter', url: 'https://github.com/my-desired-username', available: true }
 ```

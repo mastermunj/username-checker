@@ -9,7 +9,7 @@ type UsernameCheckerResponseType = {
   reason?: string;
 };
 
-export default class UsernameChecker {
+export class UsernameChecker {
   public async isAvailable<T extends keyof typeof UsernameCheckerServices>(
     service: T,
     username: string,

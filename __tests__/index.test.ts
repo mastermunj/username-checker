@@ -1,5 +1,5 @@
 import axios from 'axios';
-import UsernameChecker from '../src';
+import { UsernameChecker } from '../src';
 import MockAdapter from 'axios-mock-adapter';
 
 const mock = new MockAdapter(axios);
