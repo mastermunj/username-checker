@@ -1,4 +1,4 @@
-# Username Check
+# Username Checker
 The Username Checker allows you to check the availability of a username across multiple websites.
 
 ## Installation
