@@ -1,11 +1,13 @@
 export enum UsernameCheckerRuleNameEnum {
   STATUS_404 = 'STATUS_404',
-  AVAILABLE = 'AVAILABLE',
+  REGEX = 'AVAILABLE',
+  URL_NOT_IN_CONTENT = 'URL_NOT_IN_CONTENT',
 }
 
 type UsernameCheckerRule = {
   name: UsernameCheckerRuleNameEnum;
   matches?: string[];
+  notMatches?: string[];
 };
 
 type UsernameCheckerServiceType = {
@@ -96,7 +98,7 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://facebook.com/{{ username }}',
     rules: [
       { name: UsernameCheckerRuleNameEnum.STATUS_404 },
-      { name: UsernameCheckerRuleNameEnum.AVAILABLE, matches: ['log in to continue'] },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['log in to continue'] },
     ],
   },
   fanpop: {
@@ -205,7 +207,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   },
   pinterest: {
     url: 'https://www.pinterest.com/{{ username }}/',
-    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, notMatches: ['@USERNAME'] },
+    ],
   },
   producthunt: {
     url: 'https://www.producthunt.com/@{{ username }}',
@@ -213,7 +218,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   },
   reddit: {
     url: 'https://www.reddit.com/user/{{ username }}/',
-    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, notMatches: [`u/USERNAME`] },
+    ],
   },
   reverbnation: {
     url: 'https://www.reverbnation.com/{{ username }}',
@@ -223,7 +231,7 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://auth.roblox.com/v1/usernames/validate?birthday=2015-03-04T00:00:00.000Z&context=Signup&username={{ username }}',
     rules: [
       { name: UsernameCheckerRuleNameEnum.STATUS_404 },
-      { name: UsernameCheckerRuleNameEnum.AVAILABLE, matches: ['is valid'] },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['is valid'] },
     ],
   },
   slack: {
@@ -268,14 +276,14 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   },
   twitch: {
     url: 'https://www.twitch.tv/{{ username }}',
-    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+    rules: [{ name: UsernameCheckerRuleNameEnum.URL_NOT_IN_CONTENT }],
   },
   twitter: {
     // url: 'https://twitter.com/{{ username }}',
     url: 'https://api.twitter.com/i/users/username_available.json?username={{ username }}',
     rules: [
       { name: UsernameCheckerRuleNameEnum.STATUS_404 },
-      { name: UsernameCheckerRuleNameEnum.AVAILABLE, matches: ['Available'] },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['Available'] },
     ],
   },
   venmo: {
@@ -300,11 +308,17 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   },
   wordpress: {
     url: 'https://{{ username }}.wordpress.com/',
-    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['doesn&apos;t&nbsp;exist'] },
+    ],
   },
   ycombinator: {
     url: 'https://news.ycombinator.com/user?id={{ username }}',
-    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['No such user'] },
+    ],
   },
   yelp: {
     url: 'https://{{ username }}.yelp.com',
