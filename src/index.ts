@@ -121,6 +121,11 @@ export class UsernameChecker {
         break;
       }
     }
+
+    if (serviceDetail.publicUrl) {
+      result.url = serviceDetail.publicUrl.replace('{{ username }}', encodeURIComponent(username));
+    }
+
     return result;
   }
 

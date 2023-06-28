@@ -13,6 +13,7 @@ type UsernameCheckerRule = {
 type UsernameCheckerServiceType = {
   [key: string]: {
     url: string;
+    publicUrl?: string;
     rules: UsernameCheckerRule[];
   };
 };
@@ -279,7 +280,7 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     rules: [{ name: UsernameCheckerRuleNameEnum.URL_NOT_IN_CONTENT }],
   },
   twitter: {
-    // url: 'https://twitter.com/{{ username }}',
+    publicUrl: 'https://twitter.com/{{ username }}',
     url: 'https://api.twitter.com/i/users/username_available.json?username={{ username }}',
     rules: [
       { name: UsernameCheckerRuleNameEnum.STATUS_404 },
