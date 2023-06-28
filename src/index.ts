@@ -1,6 +1,7 @@
-import axios, { AxiosError, AxiosResponse } from 'axios';
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+require('isomorphic-fetch');
+
 import { UsernameCheckerRuleNameEnum, UsernameCheckerServices } from './config';
-import https from 'https';
 
 type UsernameCheckerResponseType = {
   service: keyof typeof UsernameCheckerServices;
@@ -8,6 +9,35 @@ type UsernameCheckerResponseType = {
   available?: boolean;
   reason?: string;
 };
+
+async function fetchData(url: string): Promise<{ response: Response; reason?: string }> {
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    abortController.abort(); // Abort the request if it takes too long
+  }, 5000);
+
+  let response;
+
+  try {
+    response = await fetch(url, {
+      signal: abortController.signal,
+      headers: {
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+    clearTimeout(timeoutId); // Clear the timeout if the request completes within time
+    return { response };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      return { response: response!, reason: 'Request timed out.' };
+    } else if (error.code === 'ECONNABORTED') {
+      return { response: response!, reason: 'Connection aborted.' };
+    } else {
+      return { response: response!, reason: 'An error occurred during the request.' };
+    }
+  }
+}
 
 export class UsernameChecker {
   public async isAvailable<T extends keyof typeof UsernameCheckerServices>(
@@ -18,42 +48,26 @@ export class UsernameChecker {
 
     const result: UsernameCheckerResponseType = {
       service,
-      url: serviceDetail.url.replace('{{ username }}', username),
+      url: serviceDetail.url.replace('{{ username }}', encodeURIComponent(username)),
       available: false,
     };
 
-    let response: AxiosResponse;
-    try {
-      const httpsAgent = new https.Agent({
-        rejectUnauthorized: false,
-      });
-      response = await axios.get(result.url, {
-        httpsAgent,
-        timeout: 5000,
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
-        },
-      });
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        if (error.code === 'ECONNABORTED') {
-          result.available = undefined;
-          result.reason = `Unable to connect to ${service}`;
-          return result;
-        } else if (error.response?.status) {
-          if (error.response.status >= 500) {
-            result.available = undefined;
-            result.reason = `${service} faced internal server error.`;
-            return result;
-          } else if (error.response.status >= 400 && ![404, 410].includes(error.response.status)) {
-            result.available = undefined;
-            result.reason = `Unknown error occured with ${service}`;
-            return result;
-          }
-        }
-      }
-      response = (error as AxiosError).response as AxiosResponse;
+    const { response, reason } = await fetchData(result.url);
+
+    if (reason) {
+      result.reason = reason;
+      result.available = undefined;
+      return result;
+    }
+
+    if (response.status >= 500) {
+      result.available = undefined;
+      result.reason = `${service} faced internal server error.`;
+      return result;
+    } else if (response.status >= 400 && ![404, 410].includes(response.status)) {
+      result.available = undefined;
+      result.reason = `Unknown error occured with ${service}`;
+      return result;
     }
 
     for (const rule of serviceDetail.rules) {
@@ -63,20 +77,44 @@ export class UsernameChecker {
             result.available = true;
           }
           break;
-        case UsernameCheckerRuleNameEnum.AVAILABLE:
+        case UsernameCheckerRuleNameEnum.REGEX:
           if (rule.matches) {
-            let data = response.data;
-            if (response.headers['content-type']?.toString().includes('application/json')) {
-              data = JSON.stringify(data);
-            }
-            for (const match of rule.matches) {
-              const test = new RegExp(match, 'gi').test(data);
+            const data = await response.text();
+
+            for (const match of rule.matches!) {
+              const test = new RegExp(match.replace('USERNAME', username), 'gi').test(data);
               if (test) {
                 result.available = true;
                 break;
               }
             }
           }
+          if (rule.notMatches) {
+            const data = await response.text();
+
+            for (const match of rule.notMatches!) {
+              const test = new RegExp(match.replace('USERNAME', username), 'gi').test(data);
+              if (test) {
+                result.available = false;
+                return result;
+              }
+            }
+
+            result.available = true;
+            break;
+          }
+          break;
+        case UsernameCheckerRuleNameEnum.URL_NOT_IN_CONTENT:
+          // eslint-disable-next-line no-case-declarations
+          try {
+            const data = await response.text();
+
+            if (!data.includes(result.url)) {
+              result.available = true;
+            }
+            // eslint-disable-next-line no-empty
+          } catch (error) {}
+
           break;
       }
       if (result.available) {
