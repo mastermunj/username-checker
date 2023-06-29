@@ -64,7 +64,7 @@ export class UsernameChecker {
       result.available = undefined;
       result.reason = `${service} faced internal server error.`;
       return result;
-    } else if (response.status >= 400 && ![404, 410].includes(response.status)) {
+    } else if (response.status >= 400 && ![404, 410, 403].includes(response.status)) {
       result.available = undefined;
       result.reason = `Unknown error occured with ${service}`;
       return result;

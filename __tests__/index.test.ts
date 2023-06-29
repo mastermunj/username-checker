@@ -137,7 +137,7 @@ describe('Username Checker', () => {
 
     test('Username exist', async () => {
       const usernameChecker = new UsernameChecker();
-      const serviceDetail = await usernameChecker.isAvailable('gitlab', 'slack');
+      const serviceDetail = await usernameChecker.isAvailable('gitlab', 'qlaffont');
       expect(serviceDetail).toMatchObject({ available: false });
     });
   });
