@@ -77,6 +77,11 @@ export class UsernameChecker {
             result.available = true;
           }
           break;
+        case UsernameCheckerRuleNameEnum.STATUS_403:
+          if ([403].includes(response.status)) {
+            result.available = true;
+          }
+          break;
         case UsernameCheckerRuleNameEnum.REGEX:
           if (rule.matches) {
             const data = await response.text();

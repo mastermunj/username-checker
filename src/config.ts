@@ -1,5 +1,6 @@
 export enum UsernameCheckerRuleNameEnum {
   STATUS_404 = 'STATUS_404',
+  STATUS_403 = 'STATUS_403',
   REGEX = 'AVAILABLE',
   URL_NOT_IN_CONTENT = 'URL_NOT_IN_CONTENT',
 }
@@ -121,6 +122,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   github: {
     url: 'https://github.com/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+  },
+  gitlab: {
+    url: 'https://gitlab.com/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_403 }],
   },
   gravatar: {
     url: 'https://en.gravatar.com/{{ username }}',

@@ -127,4 +127,18 @@ describe('Username Checker', () => {
       expect(serviceDetail).toMatchObject({ available: false });
     });
   });
+
+  describe('Gitlab', () => {
+    test('Username not exist', async () => {
+      const usernameChecker = new UsernameChecker();
+      const serviceDetail = await usernameChecker.isAvailable('gitlab', faker.string.alphanumeric(27));
+      expect(serviceDetail).toMatchObject({ available: true });
+    });
+
+    test('Username exist', async () => {
+      const usernameChecker = new UsernameChecker();
+      const serviceDetail = await usernameChecker.isAvailable('gitlab', 'slack');
+      expect(serviceDetail).toMatchObject({ available: false });
+    });
+  });
 });
