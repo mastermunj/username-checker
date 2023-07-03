@@ -64,7 +64,7 @@ export class UsernameChecker {
       result.available = undefined;
       result.reason = `${service} faced internal server error.`;
       return result;
-    } else if (response.status >= 400 && ![404, 410].includes(response.status)) {
+    } else if (response.status >= 400 && ![404, 410, 403].includes(response.status)) {
       result.available = undefined;
       result.reason = `Unknown error occured with ${service}`;
       return result;
@@ -74,6 +74,11 @@ export class UsernameChecker {
       switch (rule.name) {
         case UsernameCheckerRuleNameEnum.STATUS_404:
           if ([404, 410].includes(response.status)) {
+            result.available = true;
+          }
+          break;
+        case UsernameCheckerRuleNameEnum.STATUS_403:
+          if ([403].includes(response.status)) {
             result.available = true;
           }
           break;
@@ -121,6 +126,11 @@ export class UsernameChecker {
         break;
       }
     }
+
+    if (serviceDetail.publicUrl) {
+      result.url = serviceDetail.publicUrl.replace('{{ username }}', encodeURIComponent(username));
+    }
+
     return result;
   }
 

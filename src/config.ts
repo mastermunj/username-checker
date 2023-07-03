@@ -1,5 +1,6 @@
 export enum UsernameCheckerRuleNameEnum {
   STATUS_404 = 'STATUS_404',
+  STATUS_403 = 'STATUS_403',
   REGEX = 'AVAILABLE',
   URL_NOT_IN_CONTENT = 'URL_NOT_IN_CONTENT',
 }
@@ -13,6 +14,7 @@ type UsernameCheckerRule = {
 type UsernameCheckerServiceType = {
   [key: string]: {
     url: string;
+    publicUrl?: string;
     rules: UsernameCheckerRule[];
   };
 };
@@ -120,6 +122,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   github: {
     url: 'https://github.com/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+  },
+  gitlab: {
+    url: 'https://gitlab.com/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_403 }],
   },
   gravatar: {
     url: 'https://en.gravatar.com/{{ username }}',
@@ -279,7 +285,7 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     rules: [{ name: UsernameCheckerRuleNameEnum.URL_NOT_IN_CONTENT }],
   },
   twitter: {
-    // url: 'https://twitter.com/{{ username }}',
+    publicUrl: 'https://twitter.com/{{ username }}',
     url: 'https://api.twitter.com/i/users/username_available.json?username={{ username }}',
     rules: [
       { name: UsernameCheckerRuleNameEnum.STATUS_404 },

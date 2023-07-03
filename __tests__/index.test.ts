@@ -1,5 +1,6 @@
 import { UsernameChecker } from '../src';
 import { faker } from '@faker-js/faker';
+import { UsernameCheckerServices } from '../src/config';
 
 describe('Username Checker', () => {
   test('getServices', () => {
@@ -45,6 +46,15 @@ describe('Username Checker', () => {
       const usernameChecker = new UsernameChecker();
       const serviceDetail = await usernameChecker.isAvailable('twitter', 'qlaffontqweqweqweqweqweqwe');
       expect(serviceDetail).toMatchObject({ available: false });
+    });
+
+    test('If public url is return', async () => {
+      const usernameChecker = new UsernameChecker();
+      const username = 'qlaffont';
+      const serviceDetail = await usernameChecker.isAvailable('twitter', username);
+      expect(serviceDetail.url).toEqual(
+        UsernameCheckerServices['twitter'].publicUrl?.replace('{{ username }}', encodeURIComponent(username)),
+      );
     });
   });
 
@@ -114,6 +124,20 @@ describe('Username Checker', () => {
     test('Username exist', async () => {
       const usernameChecker = new UsernameChecker();
       const serviceDetail = await usernameChecker.isAvailable('ycombinator', 'slack');
+      expect(serviceDetail).toMatchObject({ available: false });
+    });
+  });
+
+  describe('Gitlab', () => {
+    test('Username not exist', async () => {
+      const usernameChecker = new UsernameChecker();
+      const serviceDetail = await usernameChecker.isAvailable('gitlab', faker.string.alphanumeric(27));
+      expect(serviceDetail).toMatchObject({ available: true });
+    });
+
+    test('Username exist', async () => {
+      const usernameChecker = new UsernameChecker();
+      const serviceDetail = await usernameChecker.isAvailable('gitlab', 'qlaffont');
       expect(serviceDetail).toMatchObject({ available: false });
     });
   });

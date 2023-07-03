@@ -73,6 +73,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Flickr                            | `flickr`                          |
 | Flipboard                         | `flipboard`                       |
 | GitHub                            | `github`                          |
+| Gitlab                            | `gitlab`                          |
 | Gravatar                          | `gravatar`                        |
 | Houzz                             | `houzz`                           |
 | Hubpages                          | `hubpages`                        |
