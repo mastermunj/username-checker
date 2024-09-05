@@ -45,7 +45,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.1.0",
     "@commitlint/config-conventional": "^19.1.0",
-    "@faker-js/faker": "^8.4.1",
+    "@faker-js/faker": "^9.0.0",
     "@swc/core": "^1.4.7",
     "@swc/jest": "^0.2.36",
     "@types/jest": "^29.5.12",
