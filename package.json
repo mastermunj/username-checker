@@ -1,6 +1,6 @@
 {
   "name": "username-checker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Check the availability of a username across multiple websites",
   "keywords": [
     "username",
