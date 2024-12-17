@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-require-imports */
 require('isomorphic-fetch');
 
 import { UsernameCheckerRuleNameEnum, UsernameCheckerServices } from './config';
@@ -110,14 +110,13 @@ export class UsernameChecker {
           }
           break;
         case UsernameCheckerRuleNameEnum.URL_NOT_IN_CONTENT:
-          // eslint-disable-next-line no-case-declarations
           try {
             const data = await response.text();
 
             if (!data.includes(result.url)) {
               result.available = true;
             }
-            // eslint-disable-next-line no-empty
+            // eslint-disable-next-line no-empty, @typescript-eslint/no-unused-vars
           } catch (error) {}
 
           break;
