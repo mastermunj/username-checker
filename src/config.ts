@@ -293,6 +293,14 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
       { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['Available'] },
     ],
   },
+  x: {
+    publicUrl: 'https://x.com/{{ username }}',
+    url: 'https://api.x.com/i/users/username_available.json?username={{ username }}',
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['Available'] },
+    ],
+  },
   venmo: {
     url: 'https://venmo.com/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],

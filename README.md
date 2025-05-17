@@ -112,7 +112,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | TripIt                            | `tripit`                          |
 | Tumblr                            | `tumblr`                          |
 | Twitch                            | `twitch`                          |
-| Twitter                           | `twitter`                         |
+| X (Twitter)                        | `x`                         |
 | Venmo                             | `venmo`                           |
 | Vimeo                             | `vimeo`                           |
 | VK                                | `vk`                              |
