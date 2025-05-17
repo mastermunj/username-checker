@@ -16,6 +16,7 @@ type UsernameCheckerServiceType = {
     url: string;
     publicUrl?: string;
     rules: UsernameCheckerRule[];
+    overrideHeaders?: HeadersInit;
   };
 };
 
@@ -338,4 +339,15 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://www.youtube.com/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  instagram: {
+    url: 'https://instagram.com/{{ username }}',
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['<title>Instagram</title>'] },
+    ],
+    overrideHeaders: {
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Sec-Fetch-Site': 'none'
+    },
+  }
 };

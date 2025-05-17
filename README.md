@@ -68,6 +68,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Etsy                              | `etsy`                            |
 | EyeEm                             | `eyeem`                           |
 | Facebook                          | `facebook`                        |
+| Instagram                        | `instagram`                        |
 | Fanpop                            | `fanpop`                          |
 | Fiverr                            | `fiverr`                          |
 | Flickr                            | `flickr`                          |
