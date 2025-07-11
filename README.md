@@ -68,6 +68,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Etsy                              | `etsy`                            |
 | EyeEm                             | `eyeem`                           |
 | Facebook                          | `facebook`                        |
+| Instagram                        | `instagram`                        |
 | Fanpop                            | `fanpop`                          |
 | Fiverr                            | `fiverr`                          |
 | Flickr                            | `flickr`                          |
@@ -111,7 +112,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | TripIt                            | `tripit`                          |
 | Tumblr                            | `tumblr`                          |
 | Twitch                            | `twitch`                          |
-| Twitter                           | `twitter`                         |
+| X (Twitter)                        | `x`                         |
 | Venmo                             | `venmo`                           |
 | Vimeo                             | `vimeo`                           |
 | VK                                | `vk`                              |
