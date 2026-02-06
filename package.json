@@ -1,18 +1,17 @@
 {
   "name": "username-checker",
-  "version": "0.1.1",
-  "description": "Check the availability of a username across multiple websites",
+  "version": "0.2.0",
+  "description": "Check the availability of a username across multiple websites. Inspired by Sherlock Project.",
   "keywords": [
     "username",
     "checker",
     "username checker",
     "username availability",
-    "username availability checker",
-    "social media username checker",
-    "social media username availability",
-    "social media username availability checker",
-    "social media username availability validator",
-    "username validator"
+    "osint",
+    "social media",
+    "sherlock",
+    "reconnaissance",
+    "cli"
   ],
   "repository": {
     "type": "git",
@@ -20,9 +19,23 @@
   },
   "license": "MIT",
   "author": "Munjal Dhamecha",
-  "main": "dist/index.js",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "bin": {
+    "username-checker": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "npm run clean && tsc --noEmitOnError",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
     "build:watch": "npm run build -- --watch",
     "clean": "rimraf dist coverage",
     "commit": "git-cz",
@@ -31,8 +44,9 @@
     "prepare": "husky",
     "release": "standard-version",
     "release:mock": "npm run release -- --dry-run",
-    "test": "jest --coverage --forceExit",
-    "test:watch": "npm run test -- --watch"
+    "sync-sites": "node scripts/sync-sites.cjs",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "config": {
     "commitizen": {
@@ -40,31 +54,33 @@
     }
   },
   "dependencies": {
-    "isomorphic-fetch": "^3.0.0"
+    "chalk": "^5.3.0",
+    "commander": "^14.0.3",
+    "https-proxy-agent": "^7.0.6",
+    "socks-proxy-agent": "^8.0.5"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.0.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@faker-js/faker": "^10.0.0",
-    "@swc/core": "^1.10.1",
-    "@swc/jest": "^0.2.37",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^25.0.0",
+    "@types/node": "^25.2.0",
     "@typescript-eslint/eslint-plugin": "^8.18.1",
     "@typescript-eslint/parser": "^8.18.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^10.0.1",
-    "eslint-plugin-jest": "^29.0.1",
     "eslint-plugin-prettier": "^5.2.1",
     "husky": "^9.1.7",
-    "jest": "^30.0.0",
     "lint-staged": "^16.0.0",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
     "sort-package-json": "^3.0.0",
     "standard-version": "^9.5.0",
-    "ts-jest": "^29.2.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
