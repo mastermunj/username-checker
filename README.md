@@ -98,6 +98,8 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Photobucket                       | `photobucket`                     |
 | Pinterest                         | `pinterest`                       |
 | Product Hunt                      | `producthunt`                     |
+| RapidAPI                          | `rapidapi`                        |
+| RapidAPI Organization             | `rapidapiorganization`            |
 | Reddit                            | `reddit`                          |
 | ReverbNation                      | `reverbnation`                    |
 | Roblox                            | `roblox`                          |

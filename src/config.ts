@@ -226,6 +226,14 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://www.producthunt.com/@{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  rapidapi: {
+    url: 'https://rapidapi.com/user/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.REGEX, notMatches: ['publishedApisList'] }],
+  },
+  rapidapiorganization: {
+    url: 'https://rapidapi.com/organization/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.REGEX, notMatches: ['publishedApisList'] }],
+  },
   reddit: {
     url: 'https://www.reddit.com/user/{{ username }}/',
     rules: [
