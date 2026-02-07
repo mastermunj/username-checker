@@ -88,6 +88,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://www.ebay.com/usr/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  ebaystore: {
+    url: 'https://www.ebay.com/str/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+  },
   etsy: {
     url: 'https://www.etsy.com/people/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],

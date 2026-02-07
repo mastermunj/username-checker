@@ -65,6 +65,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Disqus                            | `disqus`                          |
 | Dribbble                          | `dribbble`                        |
 | eBay                              | `ebay`                            |
+| eBay Store                        | `ebaystore`                       |
 | Etsy                              | `etsy`                            |
 | EyeEm                             | `eyeem`                           |
 | Facebook                          | `facebook`                        |
