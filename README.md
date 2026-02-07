@@ -107,6 +107,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Steam Community                   | `steamcommunity`                  |
 | Telegram                          | `telegram`                        |
 | TikTok                            | `tiktok`                          |
+| TradingView                       | `tradingview`                     |
 | Trakt.tv                          | `trakt`                           |
 | TripIt                            | `tripit`                          |
 | Tumblr                            | `tumblr`                          |

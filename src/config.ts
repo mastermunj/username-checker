@@ -268,6 +268,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://www.tiktok.com/@{{ username }}?lang=en',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  tradingview: {
+    url: 'https://www.tradingview.com/u/{{ username }}/',
+    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+  },
   trakt: {
     url: 'https://trakt.tv/users/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
