@@ -118,6 +118,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | VK                                | `vk`                              |
 | Wattpad                           | `wattpad`                         |
 | Wikia                             | `wikia`                           |
+| Wikipedia                         | `wikipedia`                       |
 | WordPress                         | `wordpress`                       |
 | Y Combinator                      | `ycombinator`                     |
 | Yelp                              | `yelp`                            |

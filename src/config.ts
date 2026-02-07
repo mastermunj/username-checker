@@ -316,6 +316,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://fandom.wikia.com/u/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  wikipedia: {
+    url: 'https://en.wikipedia.org/wiki/User:{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+  },
   wordpress: {
     url: 'https://{{ username }}.wordpress.com/',
     rules: [
