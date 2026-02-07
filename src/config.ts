@@ -16,6 +16,7 @@ type UsernameCheckerServiceType = {
     url: string;
     publicUrl?: string;
     rules: UsernameCheckerRule[];
+    overrideHeaders?: HeadersInit;
   };
 };
 
@@ -86,7 +87,14 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   },
   ebay: {
     url: 'https://www.ebay.com/usr/{{ username }}',
-    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['user was not found'] },
+    ],
+    overrideHeaders: {
+      'Accept-Language': 'en-US,en;q=0.9',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 OPR/118.0.0.0'
+    },
   },
   etsy: {
     url: 'https://www.etsy.com/people/{{ username }}',
@@ -100,8 +108,12 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://facebook.com/{{ username }}',
     rules: [
       { name: UsernameCheckerRuleNameEnum.STATUS_404 },
-      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['log in to continue'] },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['<title>Facebook</title>'] },
     ],
+    overrideHeaders: {
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Sec-Fetch-Site': 'none'
+    },
   },
   fanpop: {
     url: 'https://www.fanpop.com/fans/{{ username }}',
@@ -266,7 +278,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   },
   tiktok: {
     url: 'https://www.tiktok.com/@{{ username }}?lang=en',
-    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, notMatches: ['"statusCode":0'] },
+    ],
   },
   trakt: {
     url: 'https://trakt.tv/users/{{ username }}',
@@ -287,6 +302,14 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   twitter: {
     publicUrl: 'https://twitter.com/{{ username }}',
     url: 'https://api.twitter.com/i/users/username_available.json?username={{ username }}',
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['Available'] },
+    ],
+  },
+  x: {
+    publicUrl: 'https://x.com/{{ username }}',
+    url: 'https://api.x.com/i/users/username_available.json?username={{ username }}',
     rules: [
       { name: UsernameCheckerRuleNameEnum.STATUS_404 },
       { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['Available'] },
@@ -338,4 +361,15 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://www.youtube.com/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  instagram: {
+    url: 'https://instagram.com/{{ username }}',
+    rules: [
+      { name: UsernameCheckerRuleNameEnum.STATUS_404 },
+      { name: UsernameCheckerRuleNameEnum.REGEX, matches: ['<title>Instagram</title>'] },
+    ],
+    overrideHeaders: {
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Sec-Fetch-Site': 'none'
+    },
+  }
 };

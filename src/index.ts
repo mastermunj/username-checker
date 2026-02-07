@@ -10,7 +10,7 @@ type UsernameCheckerResponseType = {
   reason?: string;
 };
 
-async function fetchData(url: string): Promise<{ response: Response; reason?: string }> {
+async function fetchData(url: string, overrideHeaders?: HeadersInit): Promise<{ response: Response; reason?: string }> {
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => {
     abortController.abort(); // Abort the request if it takes too long
@@ -21,9 +21,9 @@ async function fetchData(url: string): Promise<{ response: Response; reason?: st
   try {
     response = await fetch(url, {
       signal: abortController.signal,
-      headers: {
+      headers: overrideHeaders ?? {
         'Accept-Language': 'en-US,en;q=0.9',
-      },
+      }
     });
     clearTimeout(timeoutId); // Clear the timeout if the request completes within time
     return { response };
@@ -52,7 +52,7 @@ export class UsernameChecker {
       available: false,
     };
 
-    const { response, reason } = await fetchData(result.url);
+    const { response, reason } = await fetchData(result.url, serviceDetail.overrideHeaders);
 
     if (reason) {
       result.reason = reason;
