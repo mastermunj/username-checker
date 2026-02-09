@@ -88,6 +88,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://www.ebay.com/usr/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  ebaystore: {
+    url: 'https://www.ebay.com/str/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+  },
   etsy: {
     url: 'https://www.etsy.com/people/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
@@ -222,6 +226,14 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://www.producthunt.com/@{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  rapidapi: {
+    url: 'https://rapidapi.com/user/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.REGEX, notMatches: ['publishedApisList'] }],
+  },
+  rapidapiorganization: {
+    url: 'https://rapidapi.com/organization/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.REGEX, notMatches: ['publishedApisList'] }],
+  },
   reddit: {
     url: 'https://www.reddit.com/user/{{ username }}/',
     rules: [
@@ -268,6 +280,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
     url: 'https://www.tiktok.com/@{{ username }}?lang=en',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
+  tradingview: {
+    url: 'https://www.tradingview.com/u/{{ username }}/',
+    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+  },
   trakt: {
     url: 'https://trakt.tv/users/{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
@@ -310,6 +326,10 @@ export const UsernameCheckerServices: UsernameCheckerServiceType = {
   },
   wikia: {
     url: 'https://fandom.wikia.com/u/{{ username }}',
+    rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
+  },
+  wikipedia: {
+    url: 'https://en.wikipedia.org/wiki/User:{{ username }}',
     rules: [{ name: UsernameCheckerRuleNameEnum.STATUS_404 }],
   },
   wordpress: {

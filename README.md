@@ -65,6 +65,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Disqus                            | `disqus`                          |
 | Dribbble                          | `dribbble`                        |
 | eBay                              | `ebay`                            |
+| eBay Store                        | `ebaystore`                       |
 | Etsy                              | `etsy`                            |
 | EyeEm                             | `eyeem`                           |
 | Facebook                          | `facebook`                        |
@@ -97,6 +98,8 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Photobucket                       | `photobucket`                     |
 | Pinterest                         | `pinterest`                       |
 | Product Hunt                      | `producthunt`                     |
+| RapidAPI                          | `rapidapi`                        |
+| RapidAPI Organization             | `rapidapiorganization`            |
 | Reddit                            | `reddit`                          |
 | ReverbNation                      | `reverbnation`                    |
 | Roblox                            | `roblox`                          |
@@ -107,6 +110,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | Steam Community                   | `steamcommunity`                  |
 | Telegram                          | `telegram`                        |
 | TikTok                            | `tiktok`                          |
+| TradingView                       | `tradingview`                     |
 | Trakt.tv                          | `trakt`                           |
 | TripIt                            | `tripit`                          |
 | Tumblr                            | `tumblr`                          |
@@ -117,6 +121,7 @@ console.log(services); // ['github', 'twitter', 'instagram', ... ]
 | VK                                | `vk`                              |
 | Wattpad                           | `wattpad`                         |
 | Wikia                             | `wikia`                           |
+| Wikipedia                         | `wikipedia`                       |
 | WordPress                         | `wordpress`                       |
 | Y Combinator                      | `ycombinator`                     |
 | Yelp                              | `yelp`                            |
