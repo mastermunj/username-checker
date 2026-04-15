@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0](https://github.com/mastermunj/username-checker/compare/v0.1.1...v0.2.0) (2026-04-15)
+
+
+### Features
+
+* support 400+ websites inspired by sherlock ([#1139](https://github.com/mastermunj/username-checker/issues/1139)) ([466ded3](https://github.com/mastermunj/username-checker/commit/466ded30379eea19287ad43cabc580fa8e379703))
+
 ### [0.1.1](https://github.com/mastermunj/username-checker/compare/v0.1.0...v0.1.1) (2024-12-17)
 
 ## [0.1.0](https://github.com/mastermunj/username-checker/compare/v0.0.3...v0.1.0) (2023-07-03)
