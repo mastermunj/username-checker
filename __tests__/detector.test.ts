@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { Detector } from '../src/Detector.js';
 import { DetectionMethod, ErrorCategory } from '../src/types.js';
 import type { SiteConfig, FetchResult } from '../src/types.js';
+import { regressionSiteFixtures } from './fixtures/accuracy-fixtures.js';
 
 describe('Detector', () => {
   describe('detect()', () => {
@@ -26,6 +27,51 @@ describe('Detector', () => {
           errorCategory: ErrorCategory.NONE,
         };
         expect(Detector.detect(config, result, 'testuser')).toBe('available');
+      });
+
+      it('should detect available when errorCode matches a 2xx response', () => {
+        const configWithErrorCode: SiteConfig = {
+          ...config,
+          errorCode: 204,
+        };
+        const result: FetchResult = {
+          statusCode: 204,
+          body: '',
+          headers: {},
+          finalUrl: 'https://example.com/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(configWithErrorCode, result, 'testuser')).toBe('available');
+      });
+
+      it('should detect available for non-success custom error codes outside the 2xx range', () => {
+        const configWithErrorCode: SiteConfig = {
+          ...config,
+          errorCode: 204,
+        };
+        const result: FetchResult = {
+          statusCode: 102,
+          body: '',
+          headers: {},
+          finalUrl: 'https://example.com/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(configWithErrorCode, result, 'testuser')).toBe('available');
+      });
+
+      it('should detect taken when a custom error-code site returns a normal success response', () => {
+        const configWithErrorCode: SiteConfig = {
+          ...config,
+          errorCode: 204,
+        };
+        const result: FetchResult = {
+          statusCode: 200,
+          body: '',
+          headers: {},
+          finalUrl: 'https://example.com/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(configWithErrorCode, result, 'testuser')).toBe('taken');
       });
 
       it('should detect taken on 200', () => {
@@ -86,6 +132,17 @@ describe('Detector', () => {
       it('should return unknown for unexpected status codes', () => {
         const result: FetchResult = {
           statusCode: 0,
+          body: '',
+          headers: {},
+          finalUrl: 'https://example.com/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(config, result, 'testuser')).toBe('unknown');
+      });
+
+      it('should return unknown for informational status codes', () => {
+        const result: FetchResult = {
+          statusCode: 102,
           body: '',
           headers: {},
           finalUrl: 'https://example.com/testuser',
@@ -278,6 +335,80 @@ describe('Detector', () => {
         expect(Detector.detect(protocolConfig, result, 'testuser')).toBe('available');
       });
 
+      it('should detect taken when the error URL does not partially match the final URL', () => {
+        const unrelatedConfig: SiteConfig = {
+          ...config,
+          errorUrl: 'https://missing.example.org/notfound',
+        };
+        const result: FetchResult = {
+          statusCode: 200,
+          body: '',
+          headers: {},
+          finalUrl: 'https://example.com/user/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(unrelatedConfig, result, 'testuser')).toBe('taken');
+      });
+
+      it('should ignore short matching URL segments when checking partial response URLs', () => {
+        const shortSegmentConfig: SiteConfig = {
+          ...config,
+          errorUrl: 'https://a.co/abcde',
+        };
+        const result: FetchResult = {
+          statusCode: 200,
+          body: '',
+          headers: {},
+          finalUrl: 'https://a.co/profile/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(shortSegmentConfig, result, 'testuser')).toBe('taken');
+      });
+
+      it('should detect available on manual redirect responses', () => {
+        const result: FetchResult = {
+          statusCode: 302,
+          body: '',
+          headers: { location: 'https://example.com/404' },
+          finalUrl: 'https://example.com/user/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(config, result, 'testuser')).toBe('available');
+      });
+
+      it('should detect available on redirect responses without a location header', () => {
+        const result: FetchResult = {
+          statusCode: 302,
+          body: '',
+          headers: {},
+          finalUrl: 'https://example.com/user/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(config, result, 'testuser')).toBe('available');
+      });
+
+      it('should detect taken on unusual statuses when the final URL does not match the error URL', () => {
+        const result: FetchResult = {
+          statusCode: 102,
+          body: '',
+          headers: {},
+          finalUrl: 'https://example.com/user/testuser',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(config, result, 'testuser')).toBe('taken');
+      });
+
+      it('should fall back to final URL matching for unusual non-redirect statuses', () => {
+        const result: FetchResult = {
+          statusCode: 102,
+          body: '',
+          headers: {},
+          finalUrl: 'https://example.com/404',
+          errorCategory: ErrorCategory.NONE,
+        };
+        expect(Detector.detect(config, result, 'testuser')).toBe('available');
+      });
+
       it('should handle error URL with username placeholder', () => {
         const userConfig: SiteConfig = {
           ...config,
@@ -327,6 +458,18 @@ describe('Detector', () => {
         errorCategory: ErrorCategory.NONE,
       };
       expect(Detector.detect(config, result, 'testuser')).toBe('available');
+    });
+
+    it('should support multiple detection strategies from a single manifest entry', () => {
+      const result: FetchResult = {
+        statusCode: 404,
+        body: 'profile unavailable',
+        headers: {},
+        finalUrl: 'https://example.com/missing',
+        errorCategory: ErrorCategory.NONE,
+      };
+
+      expect(Detector.detect(regressionSiteFixtures.mixedDetection, result, 'missing')).toBe('available');
     });
   });
 
@@ -403,6 +546,18 @@ describe('Detector', () => {
         variables: { name: 'testuser' },
       });
     });
+
+    it('should preserve non-string primitive payload values', () => {
+      const config: SiteConfig = {
+        name: 'TestSite',
+        url: 'https://example.com',
+        urlMain: 'https://example.com',
+        errorType: DetectionMethod.MESSAGE,
+        requestPayload: { username: '{}', active: true, attempts: 2 },
+      };
+      const payload = Detector.buildPayload(config, 'testuser');
+      expect(payload).toEqual({ username: 'testuser', active: true, attempts: 2 });
+    });
   });
 
   describe('getMethod()', () => {
@@ -412,6 +567,16 @@ describe('Detector', () => {
         url: 'https://example.com/{}',
         urlMain: 'https://example.com',
         errorType: DetectionMethod.STATUS_CODE,
+      };
+      expect(Detector.getMethod(config)).toBe('HEAD');
+    });
+
+    it('should return GET by default when body content may be needed', () => {
+      const config: SiteConfig = {
+        name: 'TestSite',
+        url: 'https://example.com/{}',
+        urlMain: 'https://example.com',
+        errorType: DetectionMethod.MESSAGE,
       };
       expect(Detector.getMethod(config)).toBe('GET');
     });
@@ -425,6 +590,51 @@ describe('Detector', () => {
         requestMethod: 'POST',
       };
       expect(Detector.getMethod(config)).toBe('POST');
+    });
+
+    it('should return HEAD when configured', () => {
+      const config: SiteConfig = {
+        name: 'TestSite',
+        url: 'https://example.com/{}',
+        urlMain: 'https://example.com',
+        errorType: DetectionMethod.STATUS_CODE,
+        requestMethod: 'HEAD',
+      };
+      expect(Detector.getMethod(config)).toBe('HEAD');
+    });
+
+    it('should return PUT when configured', () => {
+      const config: SiteConfig = {
+        name: 'TestSite',
+        url: 'https://example.com/{}',
+        urlMain: 'https://example.com',
+        errorType: DetectionMethod.MESSAGE,
+        requestMethod: 'PUT',
+      };
+      expect(Detector.getMethod(config)).toBe('PUT');
+    });
+  });
+
+  describe('shouldFollowRedirects()', () => {
+    it('should disable redirect following for response URL detection', () => {
+      const config: SiteConfig = {
+        name: 'TestSite',
+        url: 'https://example.com/{}',
+        urlMain: 'https://example.com',
+        errorType: DetectionMethod.RESPONSE_URL,
+        errorUrl: 'https://example.com/404',
+      };
+      expect(Detector.shouldFollowRedirects(config)).toBe(false);
+    });
+
+    it('should keep redirect following enabled for non response URL detection', () => {
+      const config: SiteConfig = {
+        name: 'TestSite',
+        url: 'https://example.com/{}',
+        urlMain: 'https://example.com',
+        errorType: DetectionMethod.MESSAGE,
+      };
+      expect(Detector.shouldFollowRedirects(config)).toBe(true);
     });
   });
 

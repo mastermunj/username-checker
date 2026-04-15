@@ -5,9 +5,10 @@
 import type { ValidationResult } from './types.js';
 
 /**
- * Characters that are potentially dangerous or could cause issues
+ * Characters that would break URL interpolation or output file handling
  */
-const UNSAFE_CHARACTERS = /[<>'";&%$#@!`(){}[\]\\|^~]/;
+const DISALLOWED_CHARACTER_PATTERN = String.raw`[<>:'";/\\|?*#%&=\u0000-\u001F\u007F]`;
+const DISALLOWED_CHARACTERS = new RegExp(DISALLOWED_CHARACTER_PATTERN, 'u');
 
 /**
  * Common username patterns - most sites allow these
@@ -75,19 +76,14 @@ export class Validator {
 
     const trimmed = username.trim();
 
-    // Check minimum length
-    if (trimmed.length < 2) {
-      errors.push('Username must be at least 2 characters long');
-    }
-
     // Check maximum length
     if (trimmed.length > 100) {
       errors.push('Username must be at most 100 characters long');
     }
 
-    // Check for unsafe characters
-    if (UNSAFE_CHARACTERS.test(trimmed)) {
-      errors.push('Username contains potentially unsafe characters');
+    // Keep global validation focused on characters that would break requests or file output.
+    if (DISALLOWED_CHARACTERS.test(trimmed)) {
+      errors.push('Username contains characters that would break URL or file output');
     }
 
     // Check if it's a reserved username
@@ -95,15 +91,20 @@ export class Validator {
       warnings.push('Username may be reserved on some platforms');
     }
 
+    // Very short usernames are valid globally, but many sites will reject them.
+    if (trimmed.length < 2) {
+      warnings.push('Very short usernames may not be allowed on some sites');
+    }
+
     // Check for common pattern compliance
     if (!COMMON_USERNAME_PATTERN.test(trimmed)) {
-      if (/^[._-]/.test(trimmed)) {
+      if (/^[^a-zA-Z0-9]/.test(trimmed)) {
         warnings.push('Username starts with a special character, which may not be allowed on some sites');
       }
-      if (/[._-]$/.test(trimmed)) {
+      if (/[^a-zA-Z0-9]$/.test(trimmed)) {
         warnings.push('Username ends with a special character, which may not be allowed on some sites');
       }
-      if (/[._-]{2,}/.test(trimmed)) {
+      if (/[^a-zA-Z0-9]{2,}/.test(trimmed)) {
         warnings.push('Username contains consecutive special characters, which may not be allowed on some sites');
       }
     }
@@ -128,13 +129,14 @@ export class Validator {
     if (!username || username.trim().length === 0) {
       return false;
     }
-    if (username.length < 2 || username.length > 100) {
+    const trimmed = username.trim();
+    if (trimmed.length > 100) {
       return false;
     }
-    if (UNSAFE_CHARACTERS.test(username)) {
+    if (DISALLOWED_CHARACTERS.test(trimmed)) {
       return false;
     }
-    if (/\s/.test(username)) {
+    if (/\s/.test(trimmed)) {
       return false;
     }
     return true;
@@ -152,9 +154,8 @@ export class Validator {
    * Sanitize a username by removing unsafe characters
    */
   static sanitize(username: string): string {
-    // Use a new regex with global flag for replacement
-    const unsafeGlobal = /[<>'";&%$#@!`(){}[\]\\|^~]/g;
-    return username.trim().replace(unsafeGlobal, '').replace(/\s+/g, '').slice(0, 100);
+    const disallowedGlobal = new RegExp(DISALLOWED_CHARACTER_PATTERN, 'gu');
+    return username.trim().replace(disallowedGlobal, '').replace(/\s+/g, '').slice(0, 100);
   }
 
   /**

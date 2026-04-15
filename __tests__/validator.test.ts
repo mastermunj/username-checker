@@ -25,10 +25,11 @@ describe('Validator', () => {
       expect(result.valid).toBe(false);
     });
 
-    it('should return invalid for very short username', () => {
+    it('should allow very short usernames with a warning', () => {
       const result = Validator.validate('a');
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Username must be at least 2 characters long');
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.warnings).toContain('Very short usernames may not be allowed on some sites');
     });
 
     it('should return invalid for very long username', () => {
@@ -40,7 +41,14 @@ describe('Validator', () => {
     it('should return invalid for usernames with unsafe characters', () => {
       const result = Validator.validate('user<script>');
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Username contains potentially unsafe characters');
+      expect(result.errors).toContain('Username contains characters that would break URL or file output');
+    });
+
+    it('should allow usernames with @ when they are otherwise safe', () => {
+      const result = Validator.validate('@handle');
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.warnings.some((warning) => warning.includes('starts with a special character'))).toBe(true);
     });
 
     it('should return invalid for usernames with spaces', () => {
@@ -92,7 +100,7 @@ describe('Validator', () => {
     });
 
     it('should return false for very short/long usernames', () => {
-      expect(Validator.isSafe('a')).toBe(false);
+      expect(Validator.isSafe('a')).toBe(true);
       expect(Validator.isSafe('a'.repeat(101))).toBe(false);
     });
 
@@ -130,6 +138,10 @@ describe('Validator', () => {
 
     it('should remove spaces', () => {
       expect(Validator.sanitize('user name')).toBe('username');
+    });
+
+    it('should preserve @ when sanitizing', () => {
+      expect(Validator.sanitize('@username')).toBe('@username');
     });
 
     it('should trim whitespace', () => {

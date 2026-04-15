@@ -2,12 +2,31 @@
  * Detector class - Static methods for detecting username availability
  */
 
-import { DetectionMethod, ErrorCategory, type SiteConfig, type FetchResult, type AvailabilityStatus } from './types.js';
+import {
+  DetectionMethod,
+  ErrorCategory,
+  type SiteConfig,
+  type FetchResult,
+  type AvailabilityStatus,
+  type RequestMethod,
+} from './types.js';
 
 /**
  * Static class for availability detection operations
  */
 export class Detector {
+  private static getDetectionMethods(errorType: SiteConfig['errorType']): DetectionMethod[] {
+    return Array.isArray(errorType) ? errorType : [errorType];
+  }
+
+  private static getErrorCodes(config?: SiteConfig): number[] {
+    if (!config?.errorCode) {
+      return [];
+    }
+
+    return Array.isArray(config.errorCode) ? config.errorCode : [config.errorCode];
+  }
+
   /**
    * Detect username availability based on site configuration and response
    */
@@ -17,30 +36,57 @@ export class Detector {
       return 'error';
     }
 
-    const { errorType } = config;
+    const methods = this.getDetectionMethods(config.errorType);
+    let status: AvailabilityStatus | null = null;
 
-    switch (errorType) {
-      case DetectionMethod.STATUS_CODE:
-        return this.detectByStatusCode(result);
-
-      case DetectionMethod.MESSAGE:
-        return this.detectByMessage(result, config, username);
-
-      case DetectionMethod.RESPONSE_URL:
-        return this.detectByResponseUrl(result, config, username);
-
-      default:
-        // Default to status code detection
-        return this.detectByStatusCode(result);
+    if (methods.includes(DetectionMethod.MESSAGE)) {
+      status = this.detectByMessage(result, config, username);
+      if (status === 'available' || status === 'error') {
+        return status;
+      }
     }
+
+    if (methods.includes(DetectionMethod.STATUS_CODE)) {
+      status = this.detectByStatusCode(result, config);
+      if (status === 'available' || status === 'error') {
+        return status;
+      }
+    }
+
+    if (methods.includes(DetectionMethod.RESPONSE_URL)) {
+      return this.detectByResponseUrl(result, config, username);
+    }
+
+    return status ?? this.detectByStatusCode(result, config);
   }
 
   /**
    * Detect by HTTP status code
    * Available if status code indicates "not found" (typically 404)
    */
-  private static detectByStatusCode(result: FetchResult): AvailabilityStatus {
+  private static detectByStatusCode(result: FetchResult, config?: SiteConfig): AvailabilityStatus {
     const { statusCode } = result;
+    const errorCodes = this.getErrorCodes(config);
+
+    if (statusCode === 0) {
+      return 'unknown';
+    }
+
+    if (errorCodes.includes(statusCode)) {
+      return 'available';
+    }
+
+    if (statusCode === 429) {
+      return 'error';
+    }
+
+    if (statusCode >= 500) {
+      return 'error';
+    }
+
+    if (errorCodes.length > 0) {
+      return statusCode >= 300 || statusCode < 200 ? 'available' : 'taken';
+    }
 
     // 404 = user not found = available
     if (statusCode === 404) {
@@ -58,16 +104,8 @@ export class Detector {
     }
 
     // 4xx (except 404) = likely taken or rate limited
-    if (statusCode === 429) {
-      return 'error';
-    }
     if (statusCode >= 400 && statusCode < 500) {
       return 'taken';
-    }
-
-    // 5xx = server error
-    if (statusCode >= 500) {
-      return 'error';
     }
 
     return 'unknown';
@@ -91,7 +129,7 @@ export class Detector {
 
     if (!errorMsg) {
       // Fall back to status code detection
-      return this.detectByStatusCode(result);
+      return this.detectByStatusCode(result, config);
     }
 
     // Check if error message is present
@@ -114,7 +152,7 @@ export class Detector {
    * Available if redirected to error URL
    */
   private static detectByResponseUrl(result: FetchResult, config: SiteConfig, username: string): AvailabilityStatus {
-    const { finalUrl, statusCode } = result;
+    const { finalUrl, headers, statusCode } = result;
     const { errorUrl } = config;
 
     // Server errors = report as error
@@ -127,33 +165,48 @@ export class Detector {
 
     if (!errorUrl) {
       // Fall back to status code detection
-      return this.detectByStatusCode(result);
+      return this.detectByStatusCode(result, config);
     }
 
     // Replace username placeholder in error URL
     const expectedErrorUrl = errorUrl.replace('{}', username);
+    const location = headers.location;
 
-    // Check if we were redirected to the error URL
-    if (finalUrl.includes(expectedErrorUrl) || finalUrl === expectedErrorUrl) {
+    if (statusCode >= 200 && statusCode < 300) {
+      return this.matchesResponseUrl(finalUrl, expectedErrorUrl) ? 'available' : 'taken';
+    }
+
+    if (location) {
       return 'available';
     }
 
+    if (statusCode >= 300 && statusCode < 500) {
+      return 'available';
+    }
+
+    return this.matchesResponseUrl(finalUrl, expectedErrorUrl) ? 'available' : 'taken';
+  }
+
+  private static matchesResponseUrl(actualUrl: string, expectedErrorUrl: string): boolean {
+    // Check if we were redirected to the error URL
+    if (actualUrl.includes(expectedErrorUrl) || actualUrl === expectedErrorUrl) {
+      return true;
+    }
+
     // Check partial match (some sites use different formats)
-    const errorUrlParts = expectedErrorUrl.split('/').filter(Boolean);
+    const errorWithoutProtocol = expectedErrorUrl.replace(/^https?:\/\//, '');
+    const finalWithoutProtocol = actualUrl.replace(/^https?:\/\//, '');
+    const errorUrlParts = errorWithoutProtocol.split('/').filter(Boolean);
 
     // If error URL is a substring pattern
-    if (errorUrlParts.some((part) => finalUrl.includes(part) && part.length > 5)) {
+    if (errorUrlParts.some((part) => actualUrl.includes(part) && part.length > 5)) {
       // More specific check needed
-      const errorWithoutProtocol = expectedErrorUrl.replace(/^https?:\/\//, '');
-      const finalWithoutProtocol = finalUrl.replace(/^https?:\/\//, '');
-
       if (finalWithoutProtocol.startsWith(errorWithoutProtocol)) {
-        return 'available';
+        return true;
       }
     }
 
-    // Not redirected to error URL = user exists = taken
-    return 'taken';
+    return false;
   }
 
   /**
@@ -170,6 +223,13 @@ export class Detector {
    */
   static buildProfileUrl(config: SiteConfig, username: string): string {
     return config.url.replace('{}', username);
+  }
+
+  /**
+   * Determine whether redirects should be followed for this site
+   */
+  static shouldFollowRedirects(config: SiteConfig): boolean {
+    return !this.getDetectionMethods(config.errorType).includes(DetectionMethod.RESPONSE_URL);
   }
 
   /**
@@ -205,8 +265,13 @@ export class Detector {
   /**
    * Get the HTTP method for a site request
    */
-  static getMethod(config: SiteConfig): 'GET' | 'POST' {
-    return config.requestMethod === 'POST' ? 'POST' : 'GET';
+  static getMethod(config: SiteConfig): RequestMethod {
+    if (config.requestMethod) {
+      return config.requestMethod;
+    }
+
+    const methods = this.getDetectionMethods(config.errorType);
+    return methods.length === 1 && methods[0] === DetectionMethod.STATUS_CODE ? 'HEAD' : 'GET';
   }
 
   /**

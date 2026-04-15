@@ -52,8 +52,8 @@ export class Proxy {
       const url = new URL(proxyUrl);
       const protocol = this.parseProtocol(proxyUrl);
 
-      let port = parseInt(url.port, 10);
-      if (isNaN(port)) {
+      let port = Number.parseInt(url.port, 10);
+      if (Number.isNaN(port)) {
         // Default ports
         port = protocol === 'https' ? 443 : protocol === 'http' ? 8080 : 1080;
       }

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { UsernameChecker } from '../src/index.js';
+import { ManifestRepository, UsernameChecker } from '../src/index.js';
 
 describe('index exports', () => {
   it('should export UsernameChecker', () => {
@@ -14,5 +14,10 @@ describe('index exports', () => {
   it('should create UsernameChecker instance', () => {
     const checker = new UsernameChecker();
     expect(checker).toBeInstanceOf(UsernameChecker);
+  });
+
+  it('should export ManifestRepository', () => {
+    expect(ManifestRepository).toBeDefined();
+    expect(typeof ManifestRepository).toBe('function');
   });
 });

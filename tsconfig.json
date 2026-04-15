@@ -6,7 +6,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
-    "declarationMap": true,
+    "declarationDir": "./dist/types",
 
     "strict": true,
     "noImplicitAny": true,
@@ -29,11 +29,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "exclude": [
-    "node_modules",
-    "dist"
-  ],
-  "include": [
-    "./src/**/*",
-  ]
+  "exclude": ["node_modules", "dist", "coverage"],
+  "include": ["./src/**/*"]
 }

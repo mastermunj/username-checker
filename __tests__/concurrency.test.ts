@@ -120,6 +120,24 @@ describe('DomainRateLimiter', () => {
     expect(elapsed).toBeLessThan(50);
   });
 
+  it('should not delay when enough time has already elapsed for the same domain', async () => {
+    const limiter = new DomainRateLimiter(100);
+    const dateNowSpy = vi.spyOn(Date, 'now');
+
+    dateNowSpy.mockReturnValueOnce(100);
+    await limiter.waitForDomain('example.com');
+
+    dateNowSpy.mockReturnValueOnce(250);
+    dateNowSpy.mockReturnValueOnce(250);
+    const start = performance.now();
+    await limiter.waitForDomain('example.com');
+    const elapsed = performance.now() - start;
+
+    expect(elapsed).toBeLessThan(20);
+
+    dateNowSpy.mockRestore();
+  });
+
   it('should clear tracked domains', async () => {
     const limiter = new DomainRateLimiter(100);
 
@@ -138,7 +156,7 @@ describe('ConcurrencyController', () => {
   it('should run tasks with concurrency control', async () => {
     const controller = new ConcurrencyController({ maxConcurrency: 2 });
     const items = [1, 2, 3, 4, 5];
-    const task = vi.fn().mockImplementation(async (n: number) => n * 2);
+    const task = vi.fn<(n: number) => Promise<number>>().mockImplementation(async (n: number) => n * 2);
 
     const results = await controller.run(items, task);
 
@@ -149,7 +167,7 @@ describe('ConcurrencyController', () => {
   it('should call onResult callback for each completion', async () => {
     const controller = new ConcurrencyController({ maxConcurrency: 2 });
     const items = [1, 2, 3];
-    const onResult = vi.fn();
+    const onResult = vi.fn<(result: number, item: number) => void>();
 
     await controller.run(items, async (n) => n * 2, { onResult });
 
@@ -159,7 +177,7 @@ describe('ConcurrencyController', () => {
   it('should call onError callback on failures', async () => {
     const controller = new ConcurrencyController({ maxConcurrency: 2 });
     const items = [1, 2, 3];
-    const onError = vi.fn();
+    const onError = vi.fn<(error: Error, item: number) => void>();
 
     await controller.run(
       items,
@@ -174,6 +192,21 @@ describe('ConcurrencyController', () => {
 
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledWith(expect.any(Error), 2);
+  });
+
+  it('should normalize non-Error task failures before calling onError', async () => {
+    const controller = new ConcurrencyController({ maxConcurrency: 1 });
+    const onError = vi.fn<(error: Error, item: number) => void>();
+
+    await controller.run(
+      [1],
+      async () => {
+        throw 'boom';
+      },
+      { onError },
+    );
+
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'boom' }), 1);
   });
 
   it('should apply domain rate limiting when getDomain provided', async () => {
@@ -271,6 +304,43 @@ describe('ConcurrencyController', () => {
 
     controller.reset();
     expect(controller.isAborted).toBe(false);
+  });
+
+  it('should respect external abort signals provided to run', async () => {
+    const controller = new ConcurrencyController({ maxConcurrency: 1 });
+    const abortController = new AbortController();
+    let started = 0;
+
+    await controller.run(
+      [1, 2, 3],
+      async () => {
+        started++;
+        if (started === 1) {
+          abortController.abort();
+          await new Promise((resolve) => setImmediate(resolve));
+        }
+        return started;
+      },
+      { signal: abortController.signal },
+    );
+
+    expect(started).toBeLessThan(3);
+  });
+
+  it('should surface task timeout errors through onError', async () => {
+    const controller = new ConcurrencyController({ maxConcurrency: 1, timeout: 10 });
+    const onError = vi.fn<(error: Error, item: number) => void>();
+
+    await controller.run(
+      [1],
+      async () => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return 1;
+      },
+      { onError },
+    );
+
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Operation timed out' }), 1);
   });
 
   it('should skip all tasks when aborted before run starts', async () => {

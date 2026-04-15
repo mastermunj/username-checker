@@ -133,10 +133,10 @@ export class ConcurrencyController {
   private readonly timeout: number;
 
   constructor(options: Partial<ConcurrencyOptions> = {}) {
-    const opts = { ...DEFAULT_OPTIONS, ...options };
+    const opts: ConcurrencyOptions = { ...DEFAULT_OPTIONS, ...options };
     this.semaphore = new Semaphore(opts.maxConcurrency);
     this.rateLimiter = new DomainRateLimiter(opts.domainDelay);
-    this.timeout = opts.timeout ?? 15000;
+    this.timeout = opts.timeout as number;
     this.abortController = new AbortController();
   }
 
@@ -150,25 +150,28 @@ export class ConcurrencyController {
       onResult?: (result: R, item: T) => void;
       onError?: (error: Error, item: T) => void;
       getDomain?: (item: T) => string;
+      signal?: AbortSignal;
     } = {},
   ): Promise<R[]> {
-    const { onResult, onError, getDomain } = options;
+    const { onResult, onError, getDomain, signal: externalSignal } = options;
     // Reset abortController for new run
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
+    const isAborted = (): boolean => signal.aborted || externalSignal?.aborted === true;
 
     const results: R[] = [];
     const errors: Array<{ item: T; error: Error }> = [];
 
     const runTask = async (item: T, index: number): Promise<void> => {
-      if (signal.aborted) {
+      /* v8 ignore next 3 */
+      if (isAborted()) {
         return;
       }
 
       await this.semaphore.acquire();
 
       try {
-        if (signal.aborted) {
+        if (isAborted()) {
           return;
         }
 
@@ -178,7 +181,7 @@ export class ConcurrencyController {
           await this.rateLimiter.waitForDomain(domain);
         }
 
-        if (signal.aborted) {
+        if (isAborted()) {
           return;
         }
 

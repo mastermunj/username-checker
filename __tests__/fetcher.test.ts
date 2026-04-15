@@ -5,9 +5,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Fetcher } from '../src/Fetcher.js';
 import { ErrorCategory } from '../src/types.js';
+import { responseFixtures } from './fixtures/accuracy-fixtures.js';
+
+type MockResponse = {
+  ok: boolean;
+  status: number;
+  url: string;
+  text: () => Promise<string>;
+  headers: Headers;
+};
 
 // Mock fetch globally
-const mockFetch = vi.fn();
+const mockFetch = vi.fn<(input: string, init?: RequestInit) => Promise<MockResponse>>();
 
 describe('Fetcher', () => {
   beforeEach(() => {
@@ -61,6 +70,50 @@ describe('Fetcher', () => {
       );
     });
 
+    it('should make HEAD requests', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: 'https://example.com/user',
+        text: async () => '',
+        headers: new Headers(),
+      });
+
+      await Fetcher.fetch('https://example.com/user', {
+        method: 'HEAD',
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://example.com/user',
+        expect.objectContaining({
+          method: 'HEAD',
+        }),
+      );
+    });
+
+    it('should make PUT request with body', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: 'https://api.example.com/check',
+        text: async () => '{"updated": true}',
+        headers: new Headers(),
+      });
+
+      await Fetcher.fetch('https://api.example.com/check', {
+        method: 'PUT',
+        body: { username: 'test' },
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.example.com/check',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ username: 'test' }),
+        }),
+      );
+    });
+
     it('should handle 404 response', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
@@ -74,6 +127,88 @@ describe('Fetcher', () => {
 
       expect(result.statusCode).toBe(404);
       expect(result.errorCategory).toBe(ErrorCategory.NONE);
+    });
+
+    it('should classify rate-limited bodies even on 200 responses', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: 'https://example.com/user',
+        text: async () => responseFixtures.rateLimitedBody,
+        headers: new Headers(),
+      });
+
+      const result = await Fetcher.fetch('https://example.com/user');
+
+      expect(result.errorCategory).toBe(ErrorCategory.RATE_LIMITED);
+      expect(result.errorMessage).toContain('Rate limited');
+    });
+
+    it('should classify challenge pages as blocked', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: 'https://example.com/user',
+        text: async () => responseFixtures.cloudflareChallenge,
+        headers: new Headers({ 'cf-mitigated': 'challenge' }),
+      });
+
+      const result = await Fetcher.fetch('https://example.com/user');
+
+      expect(result.errorCategory).toBe(ErrorCategory.BLOCKED);
+      expect(result.errorMessage).toContain('Blocked');
+    });
+
+    it('should allow manual redirect handling when requested', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 302,
+        url: 'https://example.com/user/test',
+        text: async () => '',
+        headers: new Headers({ location: 'https://example.com/404' }),
+      });
+
+      await Fetcher.fetch('https://example.com/user/test', {
+        followRedirects: false,
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://example.com/user/test',
+        expect.objectContaining({
+          redirect: 'manual',
+        }),
+      );
+    });
+
+    it('should classify 429 responses as rate limited', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 429,
+        url: 'https://example.com/user',
+        text: async () => '',
+        headers: new Headers(),
+      });
+
+      const result = await Fetcher.fetch('https://example.com/user', {
+        retryConfig: { maxRetries: 0 },
+      });
+
+      expect(result.errorCategory).toBe(ErrorCategory.RATE_LIMITED);
+    });
+
+    it('should include retry-after information in rate-limit messages', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: 'https://example.com/user',
+        text: async () => '',
+        headers: new Headers({ 'retry-after': '30' }),
+      });
+
+      const result = await Fetcher.fetch('https://example.com/user');
+
+      expect(result.errorCategory).toBe(ErrorCategory.RATE_LIMITED);
+      expect(result.errorMessage).toContain('retry after 30s');
     });
 
     it('should handle network errors', async () => {
@@ -194,6 +329,28 @@ describe('Fetcher', () => {
       expect(result.errorCategory).toBe(ErrorCategory.TIMEOUT);
     });
 
+    it('should attach an abort listener for active external signals', async () => {
+      const abortController = new AbortController();
+
+      mockFetch.mockImplementation(async () => {
+        return new Promise<MockResponse>((_, reject) => {
+          abortController.signal.addEventListener('abort', () => reject(new Error('The operation was aborted')), {
+            once: true,
+          });
+        });
+      });
+
+      const resultPromise = Fetcher.fetch('https://example.com', {
+        signal: abortController.signal,
+        retryConfig: { maxRetries: 0 },
+      });
+
+      abortController.abort();
+      const result = await resultPromise;
+
+      expect(result.errorCategory).toBe(ErrorCategory.TIMEOUT);
+    });
+
     it('should handle proxy option', async () => {
       const mockProxy = { type: 'https' } as never;
 
@@ -228,6 +385,18 @@ describe('Fetcher', () => {
       expect(result.errorCategory).toBe(ErrorCategory.CONNECTION_ERROR);
       expect(mockFetch).toHaveBeenCalledTimes(3); // initial + 2 retries
     });
+
+    it('should normalize non-Error failures into Error instances', async () => {
+      mockFetch.mockRejectedValue('boom');
+
+      const result = await Fetcher.fetch('https://example.com', {
+        retryConfig: { maxRetries: 0 },
+      });
+
+      expect(result.statusCode).toBe(0);
+      expect(result.errorCategory).toBe(ErrorCategory.UNKNOWN);
+      expect(result.errorMessage).toBe('boom');
+    });
   });
 
   describe('categorizeError()', () => {
@@ -241,10 +410,16 @@ describe('Fetcher', () => {
       expect(Fetcher.categorizeError(new Error('rate limit exceeded'))).toBe(ErrorCategory.RATE_LIMITED);
     });
 
+    it('should categorize blocked challenge errors', () => {
+      expect(Fetcher.categorizeError(new Error('Cloudflare challenge page'))).toBe(ErrorCategory.BLOCKED);
+      expect(Fetcher.categorizeError(new Error('AWS WAF blocked request'))).toBe(ErrorCategory.BLOCKED);
+    });
+
     it('should categorize connection errors', () => {
       expect(Fetcher.categorizeError(new Error('ECONNREFUSED'))).toBe(ErrorCategory.CONNECTION_ERROR);
       expect(Fetcher.categorizeError(new Error('ENOTFOUND'))).toBe(ErrorCategory.CONNECTION_ERROR);
       expect(Fetcher.categorizeError(new Error('network error'))).toBe(ErrorCategory.CONNECTION_ERROR);
+      expect(Fetcher.categorizeError(new Error('TLS certificate failure'))).toBe(ErrorCategory.CONNECTION_ERROR);
     });
 
     it('should categorize server errors', () => {

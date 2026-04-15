@@ -1,229 +1,423 @@
 # Username Checker
 
-[![npm version](https://img.shields.io/npm/v/username-checker.svg)](https://www.npmjs.com/package/username-checker)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+username-checker checks username availability across hundreds of bundled sites from Node.js or the command line.
 
-Check username availability across 478 social networks, coding platforms, and online services. Inspired by the [Sherlock Project](https://github.com/sherlock-project/sherlock).
+It uses Sherlock-derived site intelligence, but it is built as a TypeScript-first package for Node.js workflows. You can use it as a CLI for quick reconnaissance, or as a library inside scripts, apps, and internal tooling.
 
-## Features
+## Highlights
 
-- **478 supported sites** - Social networks, coding platforms, gaming, creative communities, and more
-- **Multiple detection methods** - Status code, error message, and redirect-based detection
-- **Concurrent checking** - Check multiple sites simultaneously with rate limiting
-- **Proxy & Tor support** - Route requests through HTTP/SOCKS proxies or Tor
-- **Retry logic** - Exponential backoff for failed requests
-- **OOP design** - Clean class-based API with static utility methods
-- **CLI included** - Command-line interface similar to Sherlock
-- **TypeScript support** - Full type definitions included
-- **ESM native** - Pure ES modules
-- **Zero browser dependencies** - Pure Node.js (18+)
+- Large bundled site catalog
+- Concurrent checks with retry and timeout controls
+- Memory, file, and hybrid cache modes
+- Proxy and Tor support
+- Multiple output formats for CLI usage
+- Batch API for checking more than one username
+- Debug diagnostics for request and detection troubleshooting
 
 ## Installation
+
+Requires Node.js 20.10 or later.
+
+Install locally:
 
 ```bash
 npm install username-checker
 ```
 
-## Quick Start
-
-### As a Library
-
-#### ESM (recommended)
-
-```typescript
-import { UsernameChecker } from 'username-checker';
-
-const checker = new UsernameChecker();
-
-// Check username across all sites
-const results = await checker.check('octocat');
-
-console.log(`Checked ${results.length} sites`);
-const available = results.filter(r => r.status === 'available');
-const taken = results.filter(r => r.status === 'taken');
-
-console.log(`Available: ${available.length}`);
-console.log(`Taken: ${taken.length}`);
-
-// Print available sites
-available.forEach(r => console.log(`✓ ${r.siteName}: ${r.url}`));
-
-// Check specific sites
-const filtered = await checker.check('octocat', {
-  sites: ['GitHub', 'Twitter', 'Reddit'],
-});
-
-// Get total site count
-console.log(`Total sites: ${UsernameChecker.getSiteCount()}`);
-```
-
-### As a CLI
+Install globally:
 
 ```bash
-# Check a username across all sites (outputs to octocat.txt)
-npx username-checker octocat
+npm install -g username-checker
+```
 
-# Check specific sites only
-npx username-checker octocat --sites GitHub,Twitter,Reddit
+After a global install, both commands are available:
 
-# Output as JSON to a file
-npx username-checker octocat --json results.json
+- `username-checker`
+- `uc`
 
-# Output as CSV to a file
-npx username-checker octocat --csv results.csv
+## CLI Overview
 
-# Custom output filename for text format
-npx username-checker octocat -o custom-output.txt
+The CLI is file-oriented by default.
 
-# Use a proxy
-npx username-checker octocat --proxy http://localhost:8080
+- One username writes one primary report file.
+- Multiple usernames write one primary report per username.
+- `--format` changes the primary report format.
+- `--stdout` prints the primary report to stdout.
+- `--json` and `--csv` write additional sidecar reports.
+- Debug output is printed to stderr, so it does not corrupt stdout pipelines.
 
-# Use Tor (requires Tor to be running on port 9050)
-npx username-checker octocat --tor
+If you run the default text format with a single username:
+
+```bash
+uc octocat
+```
+
+the CLI writes `octocat.txt` in the current directory.
+
+If you run JSON as the primary format:
+
+```bash
+uc octocat --format json
+```
+
+the CLI writes `octocat.json`.
+
+## CLI Quick Start
+
+Check one username across the default enabled site set:
+
+```bash
+uc octocat
+```
+
+Check only specific sites. Site names are resolved case-insensitively:
+
+```bash
+uc octocat --sites github,gitlab,reddit
+```
+
+Check multiple usernames in one run:
+
+```bash
+uc octocat torvalds
+```
+
+Write per-user reports into a folder:
+
+```bash
+uc octocat torvalds --output-dir reports
+```
+
+Print machine-readable output to stdout without writing files:
+
+```bash
+uc octocat --format json --stdout --no-write
+```
+
+Write sidecar JSON and CSV artifacts in addition to the primary report:
+
+```bash
+uc octocat --json results.json --csv results.csv
+```
+
+Show only available results:
+
+```bash
+uc octocat --available-only
+```
+
+Use cache settings explicitly:
+
+```bash
+uc octocat --cache hybrid --cache-dir ./.username-checker-cache --cache-ttl 3600000
+```
+
+Disable CLI caching entirely:
+
+```bash
+uc octocat --cache none
+```
+
+Use a custom proxy:
+
+```bash
+uc octocat --proxy http://localhost:8080
+```
+
+Use Tor:
+
+```bash
+uc octocat --tor
+```
+
+Inspect excluded manifest entries as well:
+
+```bash
+uc octocat --include-excluded
+```
+
+## Common CLI Workflows
+
+Developer handle discovery:
+
+```bash
+uc myhandle --sites github,gitlab,stackoverflow
+```
+
+Brand sweep across many sites with CSV output:
+
+```bash
+uc mybrand --format csv --output mybrand.csv
+```
+
+Batch checks for a team list:
+
+```bash
+uc alice bob charlie --output-dir team-results
+```
+
+CI-friendly stdout JSON:
+
+```bash
+uc candidate --format json --stdout --no-write
+```
+
+Targeted troubleshooting for one site:
+
+```bash
+uc octocat --sites github --debug --debug-headers --debug-body --no-write
 ```
 
 ## CLI Options
 
-```
-Usage: username-checker [options] <username>
+Site selection:
 
-Arguments:
-  username                    Username to check
+- `--sites <sites>` limits the run to a comma-separated site list.
+- `--nsfw` includes NSFW entries in the candidate site set.
+- `--include-excluded` includes manifest entries marked as excluded.
 
-Options:
-  -s, --sites <sites>         Only check specific sites (comma-separated)
-  --nsfw                      Include NSFW sites
-  --timeout <ms>              Request timeout in milliseconds (default: 15000)
-  --proxy <url>               Proxy URL (http:// or socks5://)
-  --tor                       Use Tor (socks5://127.0.0.1:9050)
-  --retries <n>               Maximum retry attempts (default: 2)
-  --json <filename>           Output results as JSON to file
-  --csv <filename>            Output results as CSV to file
-  -o, --output <filename>     Custom output filename (default: {username}.txt)
-  --available-only            Only show available usernames
-  --taken-only                Only show taken usernames
-  -v, --verbose               Show detailed output
-  -V, --version               Output version number
-  -h, --help                  Display help
-```
+Output:
 
-By default, results are saved to `{username}.txt` in a text format similar to Sherlock.
+- `--format <text|json|csv>` sets the primary output format.
+- `--output <path>` writes one aggregate primary report to a specific path.
+- `--output-dir <directory>` writes per-username primary reports into a directory.
+- `--stdout` prints the primary output to stdout.
+- `--no-write` disables all file writes.
+- `--json <filename>` writes an additional JSON report.
+- `--csv <filename>` writes an additional CSV report.
 
-## API Reference
+Network and execution controls:
 
-### `UsernameChecker`
+- `--timeout <ms>` controls request timeout.
+- `--concurrency <num>` controls maximum concurrent requests.
+- `--retries <num>` controls retry attempts.
+- `--proxy <url>` uses an HTTP, HTTPS, SOCKS4, or SOCKS5 proxy.
+- `--tor` routes requests through Tor on `localhost:9050`.
 
-Main class for checking username availability.
+Cache:
 
-#### Constructor Options
+- `--cache <type>` accepts `none`, `memory`, `file`, or `hybrid`.
+- `--cache-dir <dir>` sets the file-cache directory.
+- `--cache-ttl <ms>` sets cache TTL in milliseconds.
 
-```typescript
-const checker = new UsernameChecker({
-  // Request timeout in ms (default: 15000)
-  timeout: 15000,
+Debugging:
 
-  // Max concurrent requests (default: 50)
-  maxConcurrency: 50,
+- `--debug` enables debug reporting to stderr.
+- `--debug-headers` includes response headers in debug output.
+- `--debug-body` includes response bodies in debug output.
+- `--debug-max-body <chars>` caps debug body size.
 
-  // Retry attempts (default: 2)
-  retries: 2,
+Configuration:
 
-  // Include NSFW sites (default: false)
-  includeNSFW: false,
+- `--no-config` disables config-file and environment-variable loading for the run.
 
-  // Use Tor proxy (default: false)
-  useTor: false,
+## Configuration
 
-  // Custom proxy URL
-  proxy: 'http://localhost:8080',
-});
-```
+Configuration precedence is:
 
-#### Methods
+1. Explicit CLI flags
+2. Environment variables
+3. Config file
+4. Built-in defaults
 
-##### `check(username, options?)`
+Config files are searched in this order:
 
-Check username availability across sites.
+1. `USERNAME_CHECKER_CONFIG`
+2. `./.usernamerc`
+3. `./.usernamerc.json`
+4. `~/.usernamerc`
+5. `~/.usernamerc.json`
+6. `$XDG_CONFIG_HOME/usernamerc.json`
+7. `$XDG_CONFIG_HOME/username-checker/usernamerc.json`
 
-```typescript
-const results = await checker.check('octocat', {
-  // Specific sites to check
-  sites: ['GitHub', 'Twitter'],
-  
-  // Include NSFW sites
-  includeNSFW: false,
-  
-  // Progress callback
-  onProgress: (progress) => {
-    console.log(`${progress.completed}/${progress.total} (${progress.percentage}%)`);
-  },
-  
-  // AbortSignal for cancellation
-  signal: controller.signal,
-});
-```
+Config files are JSON today.
 
-Returns `CheckResult[]`:
+Example config:
 
-```typescript
-interface CheckResult {
-  site: string;           // Site key
-  siteName: string;       // Display name
-  url: string;            // Profile URL
-  status: 'available' | 'taken' | 'error' | 'unknown' | 'invalid';
-  httpStatus?: number;
-  responseTime: number;
-  errorCategory: ErrorCategory;
-  errorMessage?: string;
+```json
+{
+  "timeout": 15000,
+  "maxConcurrency": 50,
+  "retries": 2,
+  "includeNSFW": false,
+  "includeExcluded": false,
+  "format": "text",
+  "defaultSites": ["GitHub", "GitLab", "Reddit"],
+  "cache": {
+    "type": "hybrid",
+    "ttl": 3600000,
+    "dir": "./.username-checker-cache"
+  }
 }
 ```
 
-##### `checkSite(username, siteKey, config?)`
+`defaultSites` is used when `--sites` is omitted.
 
-Check username on a single site.
+Supported environment variables:
 
-```typescript
-const result = await checker.checkSite('octocat', 'GitHub');
-console.log(result.status); // 'taken' or 'available'
+- `USERNAME_CHECKER_TIMEOUT`
+- `USERNAME_CHECKER_CONCURRENCY`
+- `USERNAME_CHECKER_MAX_CONCURRENCY`
+- `USERNAME_CHECKER_RETRIES`
+- `USERNAME_CHECKER_NSFW`
+- `USERNAME_CHECKER_EXCLUDED`
+- `USERNAME_CHECKER_TOR`
+- `USERNAME_CHECKER_PROXY`
+- `USERNAME_CHECKER_FORMAT`
+- `USERNAME_CHECKER_CACHE_TYPE`
+- `USERNAME_CHECKER_CACHE_TTL`
+- `USERNAME_CHECKER_DEFAULT_SITES`
+- `USERNAME_CHECKER_CONFIG`
+
+Examples:
+
+```bash
+export USERNAME_CHECKER_TIMEOUT=10000
+export USERNAME_CHECKER_DEFAULT_SITES=GitHub,GitLab,Reddit
+uc octocat
 ```
 
-##### `abort()`
-
-Abort running check operations.
-
-```typescript
-checker.abort();
+```bash
+USERNAME_CHECKER_PROXY=http://localhost:8080 uc octocat --format json --stdout --no-write
 ```
 
-#### Static Methods
+## Library Quick Start
 
-```typescript
-// Get site count
-UsernameChecker.getSiteCount(); // 478
+```ts
+import { UsernameChecker } from 'username-checker';
 
-// Check if site exists
-UsernameChecker.hasSite('GitHub'); // true
+const checker = new UsernameChecker();
+const results = await checker.check('octocat');
 
-// Get site config
-UsernameChecker.getSite('GitHub'); // SiteConfig | undefined
+const available = results.filter((result) => result.status === 'available');
+console.log('available:', available.length);
 ```
 
-## Supported Sites
+## Library Examples
 
-Supports 478 sites including GitHub, Twitter, Instagram, Reddit, YouTube, TikTok, Discord, LinkedIn, and many more.
+Check one username on selected sites:
 
-See [SITES.md](SITES.md) for the complete alphabetical list.
+```ts
+import { UsernameChecker } from 'username-checker';
 
-Use `--sites Site1,Site2` in CLI or pass `sites: ['Site1', 'Site2']` in the check options.
+const checker = new UsernameChecker({ timeout: 12000, retries: 1 });
+const results = await checker.check('octocat', {
+  sites: ['GitHub', 'GitLab'],
+});
 
-## Requirements
+console.log(results);
+```
 
-- Node.js 18+ (uses native `fetch` API)
+Batch-check multiple usernames:
 
-## Acknowledgments
+```ts
+import { UsernameChecker } from 'username-checker';
 
-This project is inspired by the [Sherlock Project](https://github.com/sherlock-project/sherlock), an excellent Python tool for finding social media accounts by username. The site detection patterns and methodology are adapted from their work.
+const checker = new UsernameChecker({ maxConcurrency: 25 });
 
-## License
+const batch = await checker.checkBatch(['octocat', 'torvalds'], {
+  sites: ['GitHub', 'GitLab'],
+  onBatchProgress: (progress) => {
+    console.log(
+      progress.currentUsername,
+      `${progress.currentUsernameIndex + 1}/${progress.totalUsernames}`,
+      progress.totalPercentage,
+    );
+  },
+});
 
-[MIT](LICENSE)
+console.log(batch);
+```
+
+Use a cached checker instance:
+
+```ts
+import { UsernameChecker } from 'username-checker';
+
+const checker = new UsernameChecker({
+  cache: {
+    type: 'hybrid',
+    ttl: 60 * 60 * 1000,
+    dir: './.username-checker-cache',
+  },
+});
+
+await checker.check('octocat');
+```
+
+Disable caching in library usage:
+
+```ts
+import { UsernameChecker } from 'username-checker';
+
+const checker = new UsernameChecker({
+  cache: false,
+});
+
+await checker.check('octocat');
+```
+
+Inspect diagnostics and debug payloads:
+
+```ts
+import { UsernameChecker } from 'username-checker';
+
+const checker = new UsernameChecker();
+
+const results = await checker.check('octocat', {
+  sites: ['GitHub'],
+  debug: {
+    includeHeaders: true,
+    includeBody: true,
+    maxBodyLength: 1500,
+  },
+});
+
+console.log(results[0].diagnostics);
+console.log(results[0].debug);
+```
+
+Inject a small custom repository for focused checks or tests:
+
+```ts
+import { ManifestRepository, UsernameChecker } from 'username-checker';
+
+const repository = ManifestRepository.fromRawData({
+  Example: {
+    name: 'Example',
+    url: 'https://example.com/{}',
+    urlMain: 'https://example.com/',
+    errorType: 'status_code',
+  },
+});
+
+const checker = new UsernameChecker({ repository });
+const results = await checker.check('octocat');
+
+console.log(results);
+```
+
+## Result Status Meanings
+
+- `available`: the username appears free on that site
+- `taken`: the username appears to exist on that site
+- `invalid`: the username does not match that site's own constraints
+- `unknown`: the request succeeded but the result was not conclusive
+- `error`: transport, rate-limit, block, timeout, or upstream failure prevented a reliable answer
+
+## Operational Notes
+
+- Site matching is case-insensitive for `--sites` and library site lists.
+- Multiple usernames are processed in order, and the CLI writes one primary file per username by default.
+- The CLI's debug report goes to stderr so stdout can stay machine-readable.
+- Runtime depends heavily on network conditions, site selection, timeout, retries, and concurrency.
+- Slower cache and concurrency tests are expected locally because they intentionally exercise timers, expiration, and throttling paths.
+
+## Attribution
+
+This project is independent software, but it builds on upstream work from the Sherlock project:
+
+- Sherlock repository: https://github.com/sherlock-project/sherlock
+- Published site manifest: https://data.sherlockproject.xyz
+
+The bundled site catalog, schema checks, and false-positive exclusions are synced from Sherlock sources and adapted to this package's TypeScript runtime and CLI/library API. username-checker is not the Sherlock CLI, and it is not affiliated with or endorsed by the Sherlock maintainers.
