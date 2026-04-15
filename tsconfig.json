@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "target": "ES2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
+    "declarationDir": "./dist/types",
 
     "strict": true,
     "noImplicitAny": true,
@@ -21,15 +23,12 @@
     "noFallthroughCasesInSwitch": true,
 
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
 
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "exclude": [
-    "node_modules",
-    "__tests__"
-  ],
-  "include": [
-    "./src/**/*"
-  ]
+  "exclude": ["node_modules", "dist", "coverage"],
+  "include": ["./src/**/*"]
 }

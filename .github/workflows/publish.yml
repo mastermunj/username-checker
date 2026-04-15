@@ -1,0 +1,67 @@
+name: Publish
+
+# Release Please uses the default GitHub token in this repo, so the tag it creates
+# does not trigger a separate tag-push workflow. Instead, publish after a successful
+# Release Please run, but only when that run produced a release tag on its head SHA.
+on:
+  workflow_run:
+    workflows: [Release Please]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  publish:
+    name: npm publish with provenance
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect release tag
+        id: release-tag
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -e
+          git fetch --force --tags
+          tag="$(git tag --points-at "$RELEASE_SHA" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+
+          if [[ -z "$tag" ]]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        if: steps.release-tag.outputs.publish == 'true'
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: 24.x
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        if: steps.release-tag.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Build
+        if: steps.release-tag.outputs.publish == 'true'
+        run: npm run build
+
+      - name: Publish to npm
+        if: steps.release-tag.outputs.publish == 'true'
+        run: npm publish --provenance
+        env:
+          CI: true
