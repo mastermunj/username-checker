@@ -27,6 +27,7 @@ import {
   printProgress,
   runCliExecution,
   sanitizeOutputBasename,
+  summarizeReports,
   type UsernameReport,
 } from '../src/cli.js';
 import { DetectionMethod, ErrorCategory } from '../src/types.js';
@@ -544,6 +545,14 @@ describe('CLI helpers', () => {
 
   it('should build collision-free output basenames', () => {
     expect(buildOutputBasenames(['Alice', 'alice', 'bob'])).toEqual(['Alice', 'alice-2', 'bob']);
+  });
+
+  it('should summarize reports counting available, taken, and errors', () => {
+    const summary = summarizeReports(sampleReports);
+    expect(summary.total).toBe(4);
+    expect(summary.available).toBe(2);
+    expect(summary.taken).toBe(1);
+    expect(summary.errors).toBe(1);
   });
 
   it('should build no primary writes for empty reports', () => {

@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { chmodSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CheckResultCache } from '../src/Cache.js';
+import { CheckResultCache } from '../src/CheckResultCache.js';
 import type { CheckResult } from '../src/types.js';
 import { ErrorCategory } from '../src/types.js';
 

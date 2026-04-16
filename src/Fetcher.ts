@@ -102,6 +102,9 @@ export class Fetcher {
 
         // Check if we should retry based on status code
         if (RETRYABLE_STATUS_CODES.has(result.statusCode) && attempt < config.maxRetries) {
+          if (signal?.aborted) {
+            return result;
+          }
           attempt++;
           await this.sleep(config.retryDelay * Math.pow(config.backoffMultiplier, attempt - 1));
           continue;
@@ -117,7 +120,7 @@ export class Fetcher {
           break;
         }
 
-        if (attempt < config.maxRetries) {
+        if (attempt < config.maxRetries && !signal?.aborted) {
           attempt++;
           await this.sleep(config.retryDelay * Math.pow(config.backoffMultiplier, attempt - 1));
           continue;

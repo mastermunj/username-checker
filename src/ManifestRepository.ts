@@ -268,7 +268,15 @@ export class ManifestRepository implements SiteRepository {
   }
 
   count(options: Pick<SiteFilterOptions, 'includeExcluded'> = {}): number {
-    return this.filter({ includeNSFW: true, includeExcluded: options.includeExcluded }).length;
+    const { includeExcluded = false } = options;
+    let total = 0;
+    for (const config of this.sites.values()) {
+      if (!includeExcluded && config.isExcluded) {
+        continue;
+      }
+      total++;
+    }
+    return total;
   }
 
   has(key: string): boolean {
