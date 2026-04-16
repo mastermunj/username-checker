@@ -26,13 +26,13 @@ import { Detector } from './Detector.js';
 import { Proxy } from './Proxy.js';
 import { ConcurrencyController, DomainRateLimiter } from './Concurrency.js';
 import { RunLifecycle } from './RunLifecycle.js';
-import { CheckResultCache } from './Cache.js';
+import { CheckResultCache } from './CheckResultCache.js';
 
 /**
  * Default check options
  */
 const DEFAULT_OPTIONS: Required<
-  Omit<CheckOptions, 'proxy' | 'repository' | 'sites' | 'excludeSites' | 'onProgress' | 'signal' | 'debug' | 'cache'>
+  Omit<CheckOptions, 'proxy' | 'repository' | 'sites' | 'onProgress' | 'signal' | 'debug' | 'cache'>
 > = {
   timeout: 15000,
   maxConcurrency: 50,
@@ -120,10 +120,16 @@ export class UsernameChecker {
     lifecycle.linkSignal(signal);
     this.lifecycle = lifecycle;
 
-    // Create concurrency controller
+    // Create concurrency controller.
+    // The per-task timeout must cover all retry attempts: each attempt can take
+    // up to `timeout` ms, and the backoff adds extra delay between attempts.
+    // Use (retries + 2) × timeout as a generous upper bound so that
+    // ConcurrencyController.runWithTimeout never fires before Fetcher's own
+    // retry sequence completes.
+    const taskTimeout = this.options.timeout * (this.options.retries + 2);
     this.controller = new ConcurrencyController({
       maxConcurrency: this.options.maxConcurrency,
-      timeout: this.options.timeout,
+      timeout: taskTimeout,
       domainDelay: 100,
     });
 
@@ -196,14 +202,15 @@ export class UsernameChecker {
 
     for (let i = 0; i < usernames.length; i++) {
       const username = usernames[i];
+      const normalizedUsername = Validator.validate(username).normalizedUsername;
 
       // Notify batch progress
       onBatchProgress?.({
         currentUsername: username,
         currentUsernameIndex: i,
         totalUsernames: usernames.length,
-        usernamePercentage: Math.round(((i + 1) / usernames.length) * 100),
-        totalPercentage: Math.round(((i + 1) / usernames.length) * 100),
+        usernamePercentage: 0,
+        totalPercentage: Math.round((i / usernames.length) * 100),
       });
 
       /**
@@ -222,7 +229,7 @@ export class UsernameChecker {
             currentUsername: username,
             currentUsernameIndex: i,
             totalUsernames: usernames.length,
-            usernamePercentage: Math.round((i / usernames.length) * 100),
+            usernamePercentage: progress.percentage,
             totalPercentage: Math.round((i / usernames.length + progress.percentage / 100 / usernames.length) * 100),
             siteProgress: progress,
           };
@@ -232,17 +239,20 @@ export class UsernameChecker {
       });
 
       // Build batch result
-      const summary = {
-        total: siteResults.length,
-        available: siteResults.filter((r) => r.status === 'available').length,
-        taken: siteResults.filter((r) => r.status === 'taken').length,
-        errors: siteResults.filter((r) => r.status === 'error').length,
-      };
+      const summary = { total: siteResults.length, available: 0, taken: 0, errors: 0 };
+      for (const r of siteResults) {
+        if (r.status === 'available') {
+          summary.available++;
+        } else if (r.status === 'taken') {
+          summary.taken++;
+        } else if (r.status === 'error') {
+          summary.errors++;
+        }
+      }
 
-      const validation = Validator.validate(username);
       results.push({
         username,
-        normalizedUsername: validation.normalizedUsername,
+        normalizedUsername,
         results: siteResults,
         summary,
       });

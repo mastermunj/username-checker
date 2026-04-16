@@ -207,16 +207,22 @@ export function filterResults(
 }
 
 export function summarizeReports(reports: UsernameReport[]): CliSummary {
-  const allResults = reports.flatMap((report) => report.results);
+  const summary: CliSummary = { available: 0, taken: 0, errors: 0, total: 0 };
 
-  return {
-    available: allResults.filter((result) => result.status === 'available').length,
-    taken: allResults.filter((result) => result.status === 'taken').length,
-    errors: allResults.filter(
-      (result) => result.status === 'error' || result.status === 'unknown' || result.status === 'invalid',
-    ).length,
-    total: allResults.length,
-  };
+  for (const report of reports) {
+    for (const result of report.results) {
+      summary.total++;
+      if (result.status === 'available') {
+        summary.available++;
+      } else if (result.status === 'taken') {
+        summary.taken++;
+      } else {
+        summary.errors++;
+      }
+    }
+  }
+
+  return summary;
 }
 
 export function printProgress(progress: CheckProgress, verbose: boolean, theme: typeof import('chalk').default): void {

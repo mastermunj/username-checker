@@ -386,6 +386,28 @@ describe('Fetcher', () => {
       expect(mockFetch).toHaveBeenCalledTimes(3); // initial + 2 retries
     });
 
+    it('should not retry a retryable status code when the external signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 503,
+        url: 'https://example.com',
+        text: async () => 'Service Unavailable',
+        headers: new Headers(),
+      });
+
+      const result = await Fetcher.fetch('https://example.com', {
+        signal: controller.signal,
+        retryConfig: { maxRetries: 2, retryDelay: 10, backoffMultiplier: 1 },
+      });
+
+      // Should return the 503 result without retrying because the signal was aborted
+      expect(result.statusCode).toBe(503);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
     it('should normalize non-Error failures into Error instances', async () => {
       mockFetch.mockRejectedValue('boom');
 

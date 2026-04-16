@@ -15,6 +15,22 @@ import {
  * Static class for availability detection operations
  */
 export class Detector {
+  private static readonly regexCache = new Map<string, RegExp>();
+
+  private static getCompiledRegex(pattern: string): RegExp | null {
+    const cached = this.regexCache.get(pattern);
+    if (cached) {
+      return cached;
+    }
+    try {
+      const regex = new RegExp(pattern);
+      this.regexCache.set(pattern, regex);
+      return regex;
+    } catch {
+      return null;
+    }
+  }
+
   private static getDetectionMethods(errorType: SiteConfig['errorType']): DetectionMethod[] {
     return Array.isArray(errorType) ? errorType : [errorType];
   }
@@ -243,7 +259,7 @@ export class Detector {
     }
 
     // Deep clone and replace username placeholders
-    const payload = JSON.parse(JSON.stringify(requestPayload));
+    const payload = structuredClone(requestPayload);
     this.replaceUsernameInObject(payload, username);
 
     return payload;
@@ -253,7 +269,7 @@ export class Detector {
    * Recursively replace username placeholders in an object
    */
   private static replaceUsernameInObject(obj: Record<string, unknown>, username: string): void {
-    for (const key in obj) {
+    for (const key of Object.keys(obj)) {
       if (typeof obj[key] === 'string') {
         obj[key] = (obj[key] as string).replace('{}', username);
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {
@@ -289,12 +305,7 @@ export class Detector {
       return true;
     }
 
-    try {
-      const regex = new RegExp(config.regexCheck);
-      return regex.test(username);
-    } catch {
-      // Invalid regex, assume it matches
-      return true;
-    }
+    const regex = this.getCompiledRegex(config.regexCheck);
+    return regex ? regex.test(username) : true;
   }
 }

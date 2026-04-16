@@ -556,6 +556,50 @@ describe('UsernameChecker', () => {
       expect(results[0].results[0].status).toBe('error');
       expect(results[0].summary.errors).toBe(1);
     });
+
+    it('should count available results in batch summary', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        url: 'https://github.com/freeuser',
+        text: async () => '',
+        headers: new Headers(),
+      });
+
+      const checker = new UsernameChecker({
+        timeout: 1000,
+        retries: 0,
+      });
+
+      const results = await checker.checkBatch(['freeuser'], {
+        sites: ['GitHub'],
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].results[0].status).toBe('available');
+      expect(results[0].summary.available).toBe(1);
+    });
+
+    it('should not count invalid status in batch summary errors', async () => {
+      const siteWithRegex: SiteConfig = {
+        name: 'StrictSite',
+        url: 'https://strictsite.example/{}',
+        urlMain: 'https://strictsite.example',
+        errorType: DetectionMethod.STATUS_CODE,
+        regexCheck: '^[a-z]+$',
+      };
+      const repo = ManifestRepository.fromSiteConfigs({ StrictSite: siteWithRegex });
+      const checker = new UsernameChecker({ timeout: 1000, retries: 0, repository: repo });
+
+      const results = await checker.checkBatch(['UPPERCASE123'], {
+        sites: ['StrictSite'],
+      });
+
+      expect(results[0].results[0].status).toBe('invalid');
+      expect(results[0].summary.errors).toBe(0);
+      expect(results[0].summary.available).toBe(0);
+      expect(results[0].summary.taken).toBe(0);
+    });
   });
 
   describe('checkSite()', () => {
