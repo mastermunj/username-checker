@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1](https://github.com/mastermunj/username-checker/compare/v0.2.0...v0.2.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* misc improvements and doc updates ([cc72ef1](https://github.com/mastermunj/username-checker/commit/cc72ef1c912f4aa4a2ac5b16e0696a26b710a199))
+* misc improvements and doc updates ([501eb8e](https://github.com/mastermunj/username-checker/commit/501eb8ece2db43d6c4c25ccbb88f36619215561d))
+
 ## [0.2.0](https://github.com/mastermunj/username-checker/compare/v0.1.1...v0.2.0) (2026-04-15)
 
 ### Features
