@@ -1,8 +1,11 @@
 name: Publish
 
-# Release Please uses the default GitHub token in this repo, so the tag it creates
-# does not trigger a separate tag-push workflow. Instead, publish after a successful
-# Release Please run, but only when that run produced a release tag on its head SHA.
+# Release Please uses a PAT (RELEASE_PLEASE_TOKEN) so that the PR it creates
+# triggers CI workflows. However, the release tag it creates after merging still
+# does not trigger a separate tag-push workflow (due to GitHub's workflow loop
+# prevention for actions that themselves run workflows). Instead, publish after a
+# successful Release Please run, but only when that run produced a release tag on
+# its head SHA.
 on:
   workflow_run:
     workflows: [Release Please]
