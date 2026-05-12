@@ -60,7 +60,7 @@
     "socks-proxy-agent": "^10.0.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.5.0",
+    "@commitlint/cli": "^21.0.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@faker-js/faker": "^10.4.0",
     "@mastermunj/oxc-config": "^0.0.4",
